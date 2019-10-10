@@ -23,3 +23,16 @@ current working dir
 **Match**: `(?:go\.mod|\.(?:go|tmpl))$`  
 **Exclude**: `^vendor/`  
 **Paths**: _current working dir_
+
+## New
+
+Adds support for .env files
+
+```
+$ echo "HELLO=world" > .env
+$ watcher sh -c 'echo $HELLO'
+
+(watcher) run triggered...
+world
+(watcher) process interrupted: <nil>
+```

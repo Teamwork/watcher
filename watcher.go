@@ -12,6 +12,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/shirou/gopsutil/process"
+
+	// Auto loads .env files into current environment
+	_ "github.com/joho/godotenv/autoload"
 )
 
 // UpdateFunc type of the func that will be called after changes

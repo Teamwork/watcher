@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/joho/godotenv v1.3.0
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/teamwork/test v0.0.0-20190410143529-8897d82f8d46
