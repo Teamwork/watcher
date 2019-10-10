@@ -26,7 +26,7 @@ current working dir
 
 ## New
 
-Adds support for .env files
+Support for setting ENV vars from .env files
 
 ```
 $ echo "HELLO=world" > .env
