@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,7 +15,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 
 	// Auto loads .env files into current environment
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/joho/godotenv"
 )
 
 // UpdateFunc type of the func that will be called after changes
@@ -68,18 +69,28 @@ func Watch(opt Options, run UpdateFunc) error {
 		for {
 			select {
 			case event := <-watcher.Events:
-				if event.Op == fsnotify.Chmod {
-					continue
-				}
-				fname := strings.TrimPrefix(event.Name, "/")
-				if len(opt.Exclude) > 0 && excludeRe.MatchString(fname) {
+				if event.Op == fsnotify.Chmod || event.Name == "" {
 					break
 				}
-				if matchRe.MatchString(fname) {
+				fname := filepath.Clean(strings.TrimPrefix(event.Name, "/"))
+				if fname != ".env" && len(opt.Exclude) > 0 && excludeRe.MatchString(fname) {
+					break
+				}
+
+				switch event.Op {
+				case fsnotify.Remove:
+					watcher.Remove(fname) // in case it is watched a dir
+				case fsnotify.Create:
+					// Ignoring error here as it doesn't affect the flow
+					finfo, _ := os.Stat(fname) // nolint: errcheck
+					if finfo != nil && finfo.IsDir() {
+						watcher.Add(fname)
+					}
+				}
+				if matchRe.MatchString(fname) || fname == ".env" {
 					mu.Lock()
 					changes[fname]++
 					mu.Unlock()
-
 					update()
 				}
 			case err := <-watcher.Errors:
@@ -91,6 +102,13 @@ func Watch(opt Options, run UpdateFunc) error {
 	for _, path := range opt.Paths {
 		err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 			if !info.IsDir() {
+				return nil
+			}
+			if len(opt.Exclude) > 0 && excludeRe.MatchString(p) {
+				return nil
+			}
+			// Hardcoded exclude of .git folder
+			if strings.HasPrefix(p, ".git") {
 				return nil
 			}
 			return watcher.Add(p)
@@ -128,7 +146,16 @@ func Command(args ...string) CommandFunc {
 			return nil
 		}
 
+		osEnv := os.Environ()
+		// ignoring error as doesn't affect the execution
+		if env, _ := godotenv.Read(); env != nil { // nolint: errcheck
+			for k, v := range env {
+				osEnv = append(osEnv, fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+
 		cmd = exec.Command(args[0], args[1:]...)
+		cmd.Env = osEnv
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Start()
