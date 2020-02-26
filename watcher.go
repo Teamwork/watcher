@@ -9,10 +9,10 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/shirou/gopsutil/process"
 
 	// Auto loads .env files into current environment
 	"github.com/joho/godotenv"
@@ -155,6 +155,7 @@ func Command(args ...string) CommandFunc {
 		}
 
 		cmd = exec.Command(args[0], args[1:]...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 		cmd.Env = osEnv
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -169,26 +170,7 @@ func kill(proc *os.Process) error {
 	if proc == nil {
 		return errors.New("nil process")
 	}
-	var kfn func(p *process.Process) error
-	kfn = func(p *process.Process) error {
-		// this uses pgrep :/
-		children, err := p.Children()
-		if err != process.ErrorNoChildren && err != nil {
-			return err
-		}
-		for _, c := range children {
-			if err := kfn(c); err != nil {
-				return err
-			}
-		}
-		return p.Kill()
-	}
-
-	p, err := process.NewProcess(int32(proc.Pid))
-	if err != nil {
-		return err
-	}
-	return kfn(p)
+	return syscall.Kill(-proc.Pid, syscall.SIGKILL)
 }
 
 // debounce delays the execution of fn to avoid multiple fast calls it will
