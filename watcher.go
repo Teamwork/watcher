@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/shirou/gopsutil/process"
 
 	// Auto loads .env files into current environment
 	"github.com/joho/godotenv"
@@ -154,41 +152,9 @@ func Command(args ...string) CommandFunc {
 			}
 		}
 
-		cmd = exec.Command(args[0], args[1:]...)
-		cmd.Env = osEnv
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Start()
-
+		cmd = startProcess(osEnv, args...)
 		return cmd
 	}
-}
-
-// Kill the process and all children
-func kill(proc *os.Process) error {
-	if proc == nil {
-		return errors.New("nil process")
-	}
-	var kfn func(p *process.Process) error
-	kfn = func(p *process.Process) error {
-		// this uses pgrep :/
-		children, err := p.Children()
-		if err != process.ErrorNoChildren && err != nil {
-			return err
-		}
-		for _, c := range children {
-			if err := kfn(c); err != nil {
-				return err
-			}
-		}
-		return p.Kill()
-	}
-
-	p, err := process.NewProcess(int32(proc.Pid))
-	if err != nil {
-		return err
-	}
-	return kfn(p)
 }
 
 // debounce delays the execution of fn to avoid multiple fast calls it will
