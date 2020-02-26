@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -154,23 +152,9 @@ func Command(args ...string) CommandFunc {
 			}
 		}
 
-		cmd = exec.Command(args[0], args[1:]...)
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-		cmd.Env = osEnv
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Start()
-
+		cmd = startProcess(osEnv, args...)
 		return cmd
 	}
-}
-
-// Kill the process and all children
-func kill(proc *os.Process) error {
-	if proc == nil {
-		return errors.New("nil process")
-	}
-	return syscall.Kill(-proc.Pid, syscall.SIGKILL)
 }
 
 // debounce delays the execution of fn to avoid multiple fast calls it will
