@@ -6,7 +6,7 @@ some paths and run
 ## Installation
 
 ```
-go install github.com/teamwork/watcher/cmd/watcher
+go get github.com/teamwork/watcher/cmd/watcher
 ```
 
 ## Usage
