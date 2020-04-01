@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -27,6 +29,9 @@ type Options struct {
 	Exclude string
 	// Path to watch
 	Paths []string
+	// Handle OS signals that are raised while waiting for changes. Return true
+	// to stop watching files.
+	HandleSignals func(os.Signal) bool
 
 	// this channel will be closed when the watcher is ready, useful in case
 	// watcher is started within a go routine and we want to wait until ready
@@ -62,6 +67,9 @@ func Watch(opt Options, run UpdateFunc) error {
 	}
 	update := debounce(time.Millisecond*500, changesFn)
 
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+
 	done := make(chan error)
 	go func() {
 		for {
@@ -94,6 +102,11 @@ func Watch(opt Options, run UpdateFunc) error {
 			case err := <-watcher.Errors:
 				done <- err
 				return
+			case signal := <-signals:
+				if opt.HandleSignals != nil && opt.HandleSignals(signal) {
+					done <- nil
+					return
+				}
 			}
 		}
 	}()
