@@ -4,11 +4,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"github.com/teamwork/test"
 )
 
 func TestDebounce(t *testing.T) {
@@ -37,7 +36,7 @@ func TestCommand(t *testing.T) {
 	fn(false)
 
 	err := <-checked
-	if !test.ErrorContains(err, "killed") {
+	if err == nil || !strings.Contains(err.Error(), "killed") {
 		t.Fatal("thing", err)
 	}
 }
