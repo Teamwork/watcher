@@ -42,11 +42,10 @@ func main() {
 
 	runCmd := watcher.Command(args...)
 	updateFn := func(changes map[string]int) {
-		if changes != nil {
-			for k, v := range changes {
-				l.Printf("updates: %s (%d)\n", k, v)
-			}
+		for k, v := range changes {
+			l.Printf("updates: %s (%d)\n", k, v)
 		}
+
 		l.Printf("run triggered...\n")
 		err := runCmd(true).Wait()
 		l.Printf("process interrupted: %v\n", err)
@@ -55,9 +54,10 @@ func main() {
 	go updateFn(nil) // start the command before any changes
 
 	opt := watcher.Options{
-		Match:   match,
-		Exclude: exclude,
-		Paths:   []string(path),
+		Match:         match,
+		Exclude:       exclude,
+		Paths:         []string(path),
+		HandleSignals: func(os.Signal) bool { return true },
 	}
 	if err := watcher.Watch(opt, updateFn); err != nil {
 		l.Print("err:", err)
