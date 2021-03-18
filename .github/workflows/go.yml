@@ -1,4 +1,4 @@
-name: lint
+name: go
 
 on:
   push:
@@ -6,15 +6,15 @@ on:
     types: [opened]
 
 jobs:
-  lint:
+  go:
     runs-on: ubuntu-latest
-    name: linter
+    name: go
     steps:
       - uses: actions/checkout@v2
 
       - name: setup go
         uses: actions/setup-go@v2
-        with: 
+        with:
           go-version: 1.16
 
       - name: go dependencies
