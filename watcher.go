@@ -21,26 +21,25 @@ import (
 // UpdateFunc type of the func that will be called after changes
 type UpdateFunc func(map[string]int)
 
-// Options for the watcher struct
+// Options for the watcher struct.
 type Options struct {
-	// Match if the regexp matches the run command will be restarted
+	// Match if the regexp matches the run command will be restarted.
 	Match string
-	// Exclude if any file changed matches exclude it will ignore
+	// Exclude if any file changed matches exclude it will ignore.
 	Exclude string
-	// Path to watch
+	// Paths to watch.
 	Paths []string
 	// Handle OS signals that are raised while waiting for changes. Return true
 	// to stop watching files.
 	HandleSignals func(os.Signal) bool
 
-	// this channel will be closed when the watcher is ready, useful in case
-	// watcher is started within a go routine and we want to wait until ready
+	// Ready channel will be closed when the watcher is ready, useful in case
+	// watcher is started within a go routine and we want to wait until ready.
 	Ready chan struct{}
 }
 
-// Watch filed in background
+// Watch files in background.
 func Watch(opt Options, run UpdateFunc) error {
-
 	matchRe, err := regexp.Compile(opt.Match)
 	if err != nil {
 		return err
@@ -54,7 +53,7 @@ func Watch(opt Options, run UpdateFunc) error {
 	if err != nil {
 		return err
 	}
-	defer watcher.Close()
+	defer watcher.Close() // nolint: errcheck
 
 	// This will track file changes
 	mu := sync.Mutex{}
@@ -85,12 +84,12 @@ func Watch(opt Options, run UpdateFunc) error {
 
 				switch event.Op {
 				case fsnotify.Remove:
-					watcher.Remove(fname) // in case it is watched a dir
+					watcher.Remove(fname) // nolint: errcheck
 				case fsnotify.Create:
 					// Ignoring error here as it doesn't affect the flow
 					finfo, _ := os.Stat(fname) // nolint: errcheck
 					if finfo != nil && finfo.IsDir() {
-						watcher.Add(fname)
+						watcher.Add(fname) // nolint: errcheck
 					}
 				}
 				if matchRe.MatchString(fname) || fname == ".env" {
@@ -111,7 +110,7 @@ func Watch(opt Options, run UpdateFunc) error {
 		}
 	}()
 	for _, path := range opt.Paths {
-		err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		err = filepath.Walk(path, func(p string, info os.FileInfo, _ error) error {
 			if !info.IsDir() {
 				return nil
 			}
@@ -135,11 +134,11 @@ func Watch(opt Options, run UpdateFunc) error {
 	return <-done
 }
 
-// CommandFunc for the Command
+// CommandFunc for the Command.
 type CommandFunc func(bool) *exec.Cmd
 
 // Command returns a CommandFunc that when called will always kill the
-// previously command and will start a new one if the start flag is true
+// previously command and will start a new one if the start flag is true.
 func Command(args ...string) CommandFunc {
 	if len(args) < 1 {
 		panic("invalid number of args")
@@ -151,7 +150,7 @@ func Command(args ...string) CommandFunc {
 		defer mu.Unlock()
 
 		if cmd != nil {
-			kill(cmd.Process)
+			kill(cmd.Process) // nolint: errcheck
 		}
 		if !start {
 			return nil
@@ -171,7 +170,7 @@ func Command(args ...string) CommandFunc {
 }
 
 // debounce delays the execution of fn to avoid multiple fast calls it will
-// call the funcs in a routine
+// call the funcs in a routine.
 func debounce(d time.Duration, fn func()) func() {
 	if fn == nil {
 		panic("fn must be set")

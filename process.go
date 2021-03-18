@@ -16,7 +16,7 @@ func startProcess(osEnv []string, args ...string) *exec.Cmd {
 	cmd.Env = osEnv
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Start()
+	cmd.Start() // nolint: errcheck
 	return cmd
 }
 

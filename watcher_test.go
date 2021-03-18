@@ -50,6 +50,7 @@ func TestWatch(t *testing.T) {
 	}
 
 	checked := make(chan error)
+	// nolint: errcheck
 	go Watch(opt, func(changes map[string]int) {
 		if _, ok := changes["test/test.txt"]; !ok {
 			checked <- errors.New("not found")
@@ -62,7 +63,7 @@ func TestWatch(t *testing.T) {
 	if err := ioutil.WriteFile(testFile, []byte{1}, os.FileMode(0644)); err != nil {
 		t.Fatal("creating test file", err)
 	}
-	defer os.Remove(testFile)
+	defer os.Remove(testFile) // nolint: errcheck
 
 	select {
 	case err := <-checked:
