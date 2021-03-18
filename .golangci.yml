@@ -31,3 +31,4 @@ issues:
     - linters:
       - staticcheck
       text: "SA5008:"
+
